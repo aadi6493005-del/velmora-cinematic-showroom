@@ -1,23 +1,88 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from '@tanstack/react-router';
+import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from 'react';
+import { ArrowUpRight, ArrowRight, ArrowDown, ShoppingBag, Menu, X, Plus, Minus, Leaf, Droplets, Flower2, Instagram, Check, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { products, updateQuantity, bagTotal, money, type Bag, type Product } from '@/lib/collection';
+import bottle from '@/assets/body-lotion.asset.json';
+import logo from '@/assets/logo.asset.json';
+import botanical from '@/assets/botanical.asset.json';
 
-// The home route ships no og:image, so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
-export const Route = createFileRoute("/")({
+const HeroScene = lazy(() => import('@/components/hero-scene'));
+const nav = [['Home','home'],['Collections','collections'],['Our Story','story'],['Ingredients','ingredients'],['Ritual','ritual'],['Contact','contact']] as const;
+const steps = [{title:'Cleanse',id:'wash',text:'Let the day begin with a fresh, beautiful intention.'},{title:'Exfoliate',id:'scrub',text:'Slow down. Create space for a new beginning.'},{title:'Nourish',id:'lotion',text:'A silky moment of care, made just for you.'},{title:'Moisturise',id:'butter',text:'Take a little longer. Indulge in a richer ritual.'},{title:'Refresh',id:'mist',text:'One final flourish. Carry the feeling with you.'}];
+
+export const Route = createFileRoute('/')({
+  ssr: false,
+  head: () => ({meta:[
+    {title:'VELMORA — Care Beyond Everyday'},
+    {name:'description',content:'Step into VELMORA: a botanical-inspired luxury body-care collection and a more beautiful world of everyday rituals.'},
+    {property:'og:title',content:'VELMORA — Care Beyond Everyday'},
+    {property:'og:description',content:'Discover six considered body-care essentials in the immersive world of VELMORA.'},
+    {property:'og:type',content:'website'},
+    {name:'twitter:card',content:'summary_large_image'},
+  ]}),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
+  const [intro,setIntro] = useState(true);
+  const [menu,setMenu] = useState(false);
+  const [bag,setBag] = useState<Bag>({});
+  const [bagOpen,setBagOpen] = useState(false);
+  const [detail,setDetail] = useState<Product | null>(null);
+  const [ritual,setRitual] = useState(0);
+  const [notice,setNotice] = useState('');
+  const [newsletter,setNewsletter] = useState(false);
+  const [contact,setContact] = useState(false);
+  const heroImage = useRef<HTMLImageElement>(null);
+  const count = Object.values(bag).reduce((a,b)=>a+b,0);
+  const step = steps[ritual] ?? steps[0];
+  const ritualProduct = products.find(p => p.id === step?.id) ?? products[0];
+  useEffect(() => {
+    const timer = setTimeout(()=>setIntro(false), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1900);
+    const observer = new IntersectionObserver(entries=>entries.forEach(entry=> {if(entry.isIntersecting){entry.target.classList.add('revealed');observer.unobserve(entry.target);}}),{threshold:.08});
+    document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+    return ()=>{clearTimeout(timer);observer.disconnect();};
+  },[]);
+  useEffect(()=>{if(!notice)return; const timer=setTimeout(()=>setNotice(''),2800);return()=>clearTimeout(timer);},[notice]);
+  function add(p: Product){setBag(b=>updateQuantity(b,p.id,1));setNotice(`${p.name} added to your bag`);}
+  function submitNewsletter(e:FormEvent<HTMLFormElement>){e.preventDefault();setNewsletter(true);}
+  function submitContact(e:FormEvent<HTMLFormElement>){e.preventDefault();setContact(true);}
+
+  return <>
+    {intro && <div className="cinematic-intro"><img src={logo.url} alt="VELMORA — Care Beyond Everyday"/><span className="intro-caption">A MORE BEAUTIFUL EVERYDAY</span><Button variant="luxuryOutline" onClick={()=>setIntro(false)}>Skip introduction <ArrowRight/></Button></div>}
+    <header className="site-header">
+      <a className="header-brand" href="#home" aria-label="VELMORA home"><img src={logo.url} alt="VELMORA"/><span>VELMORA<small>BODY CARE & WELLNESS</small></span></a>
+      <nav className={menu?'main-nav nav-open':'main-nav'} aria-label="Main navigation">{nav.map(([label,id])=><a key={id} href={`#${id}`} onClick={()=>setMenu(false)}>{label}</a>)}</nav>
+      <div className="header-actions"><Button variant="ghost" className="bag-toggle" onClick={()=>setBagOpen(true)} aria-label={`Shopping bag, ${count} items`}><ShoppingBag/><span className="bag-label">Bag</span><span className="bag-count">{count}</span></Button><Button variant="ghost" size="icon" className="mobile-toggle" aria-label={menu?'Close menu':'Open menu'} onClick={()=>setMenu(!menu)}>{menu?<X/>:<Menu/>}</Button></div>
+    </header>
+    <main>
+      <section id="home" className="hero" onPointerMove={e=>{if(!heroImage.current || matchMedia('(prefers-reduced-motion: reduce)').matches)return;const rect=e.currentTarget.getBoundingClientRect();heroImage.current.style.transform=`scale(1.025) perspective(1400px) rotateY(${((e.clientX-rect.left)/rect.width-.5)*1.7}deg)`;}} onPointerLeave={()=>{if(heroImage.current)heroImage.current.style.transform='scale(1.025)';}}>
+        <img className="hero-image" ref={heroImage} src={bottle.url} alt="Original VELMORA Body Lotion with lavender, silk, and champagne-gold light" fetchPriority="high"/>
+        <div className="hero-shade"/>
+        <Suspense fallback={null}><HeroScene/></Suspense>
+        <div className="hero-content"><p className="eyebrow hero-eyebrow"><span/> THE VELMORA EXPERIENCE</p><h1>Care beyond<br/><em>everyday.</em></h1><p className="hero-copy">Discover a more beautiful way<br/>to care for yourself.</p><div className="hero-buttons"><Button asChild variant="luxury"><a href="#collections">Explore Collection <ArrowUpRight/></a></Button><Button asChild variant="luxuryOutline"><a href="#collections">Shop Now <ShoppingBag/></a></Button></div><div className="hero-notes"><span>BOTANICALLY INSPIRED</span><i/><span>BEAUTIFULLY CONSIDERED</span></div></div>
+        <a href="#collections" className="scroll-cue"><span>SCROLL TO DISCOVER</span><ArrowDown size={15}/></a>
+        <div className="hero-product-caption"><span>THE SIGNATURE</span><strong>Velmora Body Lotion</strong><span>400 ml · A daily moment of luxury</span></div>
+        <span className="hero-edition">01 / THE EVERYDAY, ELEVATED</span>
+      </section>
+      <div className="philosophy-strip"><span>CARE BEYOND EVERYDAY</span><Flower2/><span>ROOTED IN BOTANICAL BEAUTY</span><Flower2/><span>A RITUAL, NOT A ROUTINE</span><Flower2/><span>THE ART OF SELF-CARE</span></div>
+      <section id="collections" className="collection section-space">
+        <div className="section-heading reveal"><div><p className="eyebrow">THE VELMORA COLLECTION</p><h2>Little luxuries.<br/><em>Beautiful rituals.</em></h2></div><div className="heading-aside"><p>Six considered essentials.<br/>One beautiful way to care for yourself.</p><span className="demo-label">FICTIONAL COLLECTION · SAMPLE INR PRICES</span></div></div>
+        <div className="product-grid">{products.map((p,i)=><article key={p.id} className="product-card reveal"><div className={`product-image-wrap ${p.concept?'concept-image':'original-image'}`}><span className="product-tag">{i===0?'THE SIGNATURE':'CONCEPT COLLECTION'}</span><a href="#collections" onClick={e=>{e.preventDefault();setDetail(p);}} aria-label={`View ${p.name} details`}><img src={p.image} alt={p.concept?`VELMORA ${p.name} fictional packaging concept`:'Original VELMORA Body Lotion photograph'} loading="lazy"/></a><Button variant="secondary" size="icon" className="quick-add" title={`Add ${p.name} to bag`} aria-label={`Add ${p.name} to bag`} onClick={()=>add(p)}><Plus/></Button></div><div className="product-info"><div className="product-title"><h3>{p.name}</h3><span>{p.size}</span></div><p>{p.note}</p><div className="product-bottom"><strong>{money(p.price)} <small>sample</small></strong><Button variant="editorial" onClick={()=>setDetail(p)}>View Details <ArrowUpRight/></Button></div><Button variant="outline" className="product-add" onClick={()=>add(p)}>Add to Bag <ShoppingBag/></Button></div></article>)}</div>
+      </section>
+      <section className="featured"><div className="featured-image"><img src={bottle.url} alt="VELMORA signature Body Lotion, original 400 ml packaging" loading="lazy"/><span>THE SIGNATURE COLLECTION / 01</span></div><div className="featured-copy reveal"><p className="eyebrow">THE EVERYDAY, ELEVATED</p><h2>The art of<br/><em>everyday care.</em></h2><p>A pause. A breath. A little care, just for you. Our signature Body Lotion brings a touch of beauty to the moments you make your own.</p><div className="feature-highlights"><span><Droplets/> Silky texture</span><span><Flower2/> Lavender inspired</span><span><Leaf/> A considered ritual</span></div><div className="feature-detail"><span>BODY LOTION · 400 ML</span><span>{money(products[0].price)} <small>sample price</small></span></div><Button variant="luxury" onClick={()=>setDetail(products[0])}>Discover More <ArrowUpRight/></Button></div></section>
+      <section id="story" className="story section-space"><div className="story-number">V.</div><div className="story-copy reveal"><p className="eyebrow">OUR PHILOSOPHY</p><h2>Beauty in every<br/><em>little ritual.</em></h2><p>We believe the everyday can be extraordinary. Not through grand gestures, but through the small, intentional moments we give ourselves.</p><p>Inspired by the quiet beauty of botanicals, VELMORA is an invitation to slow down. To turn a familiar routine into a personal ritual. To find a little luxury in simply being you.</p><span className="story-signature">Care beyond everyday.</span></div><div className="story-image"><img src={botanical.url} alt="Lavender stems resting on softly folded purple silk" loading="lazy"/><span>INSPIRED BY NATURE. MADE FOR YOUR MOMENTS.</span></div></section>
+      <section id="ingredients" className="ingredients"><img className="ingredients-background" src={botanical.url} alt="Fresh lavender botanical campaign" loading="lazy"/><div className="ingredients-shade"/><div className="ingredients-copy reveal"><p className="eyebrow">THE BOTANICAL MUSE</p><h2>Nature, in its<br/><em>most beautiful form.</em></h2><p>A lavender-inspired world of delicate flowers, beautiful textures, and quiet moments.</p><div className="ingredient-notes"><div><Flower2/><h3>Lavender</h3><p>Our signature botanical inspiration.</p></div><div><Droplets/><h3>Beautiful textures</h3><p>From airy touches to rich indulgence.</p></div><div><Leaf/><h3>Thoughtful care</h3><p>A philosophy rooted in intention.</p></div></div><span className="ingredient-disclaimer">Botanical inspiration, not a verified ingredient list. This is a fictional collection.</span></div></section>
+      <section id="ritual" className="ritual section-space"><div className="section-heading reveal"><div><p className="eyebrow">THE VELMORA BEAUTY RITUAL</p><h2>Make a moment<br/><em>of every day.</em></h2></div><p className="heading-aside">Five steps. A little time for you.</p></div><div className="ritual-tabs" role="tablist" aria-label="Beauty ritual">{steps.map((s,i)=><Button role="tab" aria-selected={ritual===i} aria-controls="ritual-panel" id={`ritual-tab-${i}`} variant="ghost" className={ritual===i?'ritual-tab active':'ritual-tab'} key={s.id} onClick={()=>setRitual(i)}><span>0{i+1}</span>{s.title}</Button>)}</div><div id="ritual-panel" role="tabpanel" aria-labelledby={`ritual-tab-${ritual}`} className="ritual-panel"><div className="ritual-product"><img key={ritualProduct.id} src={ritualProduct.image} alt={`VELMORA ${ritualProduct.name}`} loading="lazy"/></div><div className="ritual-text"><span className="eyebrow">STEP 0{ritual+1} / YOUR DAILY RITUAL</span><h3>{step?.title}.<br/><em>{ritualProduct.note}.</em></h3><p>{step?.text}</p><span className="ritual-product-name">VELMORA {ritualProduct.name} · {ritualProduct.size}</span><Button variant="editorial" onClick={()=>setDetail(ritualProduct)}>Discover {ritualProduct.name} <ArrowUpRight/></Button><div className="ritual-arrows"><Button variant="outline" size="icon" aria-label="Previous ritual step" onClick={()=>setRitual((ritual+4)%5)}><ArrowRight className="previous-arrow"/></Button><Button variant="outline" size="icon" aria-label="Next ritual step" onClick={()=>setRitual((ritual+1)%5)}><ArrowRight/></Button></div></div></div></section>
+      <section className="gallery section-space"><div className="section-heading reveal"><div><p className="eyebrow">A WORLD OF VELMORA</p><h2>Beauty, <em>in focus.</em></h2></div><span className="gallery-label">THE BOTANICAL EDIT / VOL. 01</span></div><div className="gallery-grid"><figure><img src={bottle.url} alt="Signature VELMORA lotion campaign" loading="lazy"/><figcaption>01 — The signature</figcaption></figure><figure><img src={botanical.url} alt="Lavender and silk botanical still life" loading="lazy"/><figcaption>02 — A botanical muse</figcaption></figure><figure><img src={logo.url} alt="Original VELMORA brand artwork" loading="lazy"/><figcaption>03 — Care beyond everyday</figcaption></figure></div></section>
+      <section className="newsletter"><p className="eyebrow">LET A LITTLE BEAUTY IN</p><h2>A moment for you.<br/><em>A world to discover.</em></h2><p>Notes on beautiful rituals and the world of VELMORA.</p><form onSubmit={submitNewsletter}><label className="sr-only" htmlFor="newsletter-email">Your email address</label><input id="newsletter-email" name="email" type="email" required placeholder="Your email address"/><Button type="submit" variant="ghost" size="icon" aria-label="Subscribe to newsletter"><ArrowRight/></Button></form>{newsletter?<p className="form-result" role="status"><Check size={16}/> Email validated. Demo only — no subscription was saved.</p>:<small>DEMONSTRATION ONLY · NO EMAILS ARE SENT</small>}</section>
+      <section id="contact" className="contact section-space"><div className="contact-copy"><p className="eyebrow">A CONVERSATION, BEAUTIFULLY BEGUN</p><h2>We’d love<br/><em>to hear from you.</em></h2><p>For a question, a thought, or a little inspiration.</p><span className="demo-label">FICTIONAL BRAND · CONTACT FORM DEMO</span></div><form className="contact-form" onSubmit={submitContact}><div className="form-row"><label>Your name<input name="name" autoComplete="name" minLength={2} required placeholder="Full name"/></label><label>Email address<input name="email" type="email" autoComplete="email" required placeholder="you@example.com"/></label></div><label>Your message<textarea name="message" minLength={10} required rows={3} placeholder="What’s on your mind?"/></label><Button variant="luxury" type="submit">Send Message <ArrowUpRight/></Button>{contact?<p className="form-result" role="status"><Check size={16}/> Message validated. Demo only — your message was not sent.</p>:<small>No message is sent or stored. This form is a frontend demonstration.</small>}</form></section>
+    </main>
+    <footer className="footer"><div className="footer-top"><div className="footer-brand"><img src={logo.url} alt="Original VELMORA logo — Care Beyond Everyday"/><p>A more beautiful way to care for yourself.</p></div><div><span>EXPLORE VELMORA</span>{nav.slice(1).map(([label,id])=><a key={id} href={`#${id}`}>{label}</a>)}</div><div><span>THE SOCIAL EDIT</span><Button variant="ghost" className="social-button" onClick={()=>setNotice('Instagram is a placeholder for this fictional brand.')}><Instagram/> Instagram <ArrowUpRight/></Button><p className="footer-demo">Fictional luxury body care.<br/>Concept products. Sample prices.<br/>No payments or orders.</p></div></div><div className="footer-bottom"><span>© 2026 VELMORA. Care beyond everyday.</span><a href="#home">BACK TO TOP ↑</a><span>DESIGNED FOR BEAUTIFUL EVERYDAYS</span></div></footer>
+    <Dialog open={detail!==null} onOpenChange={open=>{if(!open)setDetail(null);}}><DialogContent className="detail-dialog">{detail && <><div className="detail-image"><img src={detail.image} alt={`VELMORA ${detail.name}`}/></div><div className="detail-copy"><p className="eyebrow">{detail.concept?'FICTIONAL PACKAGING CONCEPT':'THE ORIGINAL SIGNATURE'}</p><DialogTitle className="detail-title">{detail.name}</DialogTitle><span>{detail.size}</span><DialogDescription>{detail.description}</DialogDescription><p className="detail-use"><strong>Your ritual</strong><br/>Enjoy a considered moment of everyday self-care. Concept information only; no verified formulation or performance claims.</p><strong className="detail-price">{money(detail.price)} <small>sample INR price</small></strong><Button variant="luxury" onClick={()=>add(detail)}>Add to Bag <ShoppingBag/></Button><p className="modal-disclaimer">Fictional collection. No real purchases or payments.</p></div></>}</DialogContent></Dialog>
+    <Dialog open={bagOpen} onOpenChange={setBagOpen}><DialogContent className="bag-dialog"><DialogTitle className="bag-title">Your shopping bag <span>({count})</span></DialogTitle><DialogDescription>A little luxury, collected. Demo shopping bag only.</DialogDescription>{count===0?<div className="empty-bag"><ShoppingBag size={36}/><h3>A beautiful beginning.</h3><p>Your bag is waiting for a little care.</p><Button variant="luxury" onClick={()=>{setBagOpen(false);document.getElementById('collections')?.scrollIntoView({behavior:'smooth'});}}>Explore Collection <ArrowRight/></Button></div>:<><div className="bag-items">{products.filter(p=>(bag[p.id]??0)>0).map(p=><div className="bag-item" key={p.id}><img src={p.image} alt={p.name}/><div><h3>{p.name}</h3><p>{p.size} · {money(p.price)} sample</p><div className="quantity-control"><Button variant="ghost" size="icon" aria-label={`Decrease ${p.name} quantity`} onClick={()=>setBag(b=>updateQuantity(b,p.id,-1))}><Minus/></Button><span aria-label={`${p.name} quantity`}>{bag[p.id]}</span><Button variant="ghost" size="icon" aria-label={`Increase ${p.name} quantity`} onClick={()=>setBag(b=>updateQuantity(b,p.id,1))}><Plus/></Button></div></div><Button variant="ghost" size="icon" aria-label={`Remove ${p.name}`} onClick={()=>setBag(b=>updateQuantity(b,p.id,-(b[p.id]??0)))}><Trash2/></Button></div>)}</div><div className="bag-summary"><span>Sample subtotal</span><strong>{money(bagTotal(bag))}</strong></div><p className="bag-disclaimer">This is a demonstration. Prices are fictional INR examples. No payment is taken and no order will be placed.</p><Button variant="luxury" onClick={()=>setBagOpen(false)}>Continue Exploring <ArrowRight/></Button></>}</DialogContent></Dialog>
+    {notice && <div className="notice" role="status"><Check size={16}/>{notice}</div>}
+  </>;
 }

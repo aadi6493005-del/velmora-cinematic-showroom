@@ -28,3 +28,9 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## VELMORA architecture
+- Keep the explicitly requested smooth-scrolling experience in the index route, with section anchors; this preserves the user's single-page cinematic navigation.
+- Keep demo collection and bag calculations in a browser-safe plain TypeScript module with tests; no real payment, order, contact, or subscription action is implied.
+- Load the Three.js petal scene lazily on the non-SSR index with WebGL and reduced-motion guards; original photography remains visible independently of the scene.
+- Keep original supplied photography and logo immutable in asset pointers; generated supporting imagery is clearly identified as fictional packaging concepts.
