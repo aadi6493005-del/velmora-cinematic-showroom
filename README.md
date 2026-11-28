@@ -1,26 +1,29 @@
-# Velmora Cinematic Showroom
+# VELMORA – Premium Body Care
 
-Implement exactly the screenshot and nothing else
+**Care Beyond Everyday.**
 
-This project was built with [Lovable](https://lovable.dev).
+VELMORA is a premium cinematic body-care e-commerce website created as an AI-powered web development project using Lovable.
 
-**Live app**: https://velmora-cinematic-showroom.lovable.app
+## 🌐 Live Website
+https://velmora-cinematic-showroom.lovable.app/namude
 
-## Build with Lovable
+## ✨ Features
+- Premium body-care storefront design
+- Modern cinematic user interface
+- Responsive website experience
+- AI-assisted website development
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/384c899d-ddb0-48d0-9999-35fc16daa03a).
+## 🛠️ Technologies
+- Lovable AI
+- React
+- TypeScript
+- Tailwind CSS
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+## 🎯 Project Objective
+To create a premium digital shopping experience for a fictional body-care brand using AI-powered development tools.
 
-## Development
+## 👨‍💻 Developer
+Adi
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
-```
+## 📌 Project Type
+AI-Powered Web Development Project
